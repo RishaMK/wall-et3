@@ -27,6 +27,7 @@ export const TransactionProvider = ({ children }) => {
         const storedCount = localStorage.getItem('transactionCount');
         return storedCount ? BigInt(storedCount) : 0n;  // Default to 0 if no count is stored
     });
+    const [balance, SetBalance] = useState('');
 
     const handleChange = (e, name) => {
         setFormData((prevState) => ({ ...prevState, [name]: e.target.value }));
@@ -82,6 +83,7 @@ export const TransactionProvider = ({ children }) => {
 
             if (accounts.length) {
                 setCurrentAccount(accounts[0]);
+                fetchBalance(accounts[0]);
             } else {
                 console.log('no accounts found');
             }
@@ -99,6 +101,7 @@ export const TransactionProvider = ({ children }) => {
             const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
 
             setCurrentAccount(accounts[0]);
+            fetchBalance(accounts[0]); 
         } catch (error) {
             console.log(error);
             throw new Error("error connecting wallet");
@@ -122,12 +125,33 @@ export const TransactionProvider = ({ children }) => {
         }
     }
 
+    const fetchBalance = async (account) => {
+        try {
+            
+                console.log('entered')
+                const myBalance = await ethereum.request({
+                    "method": "eth_getBalance",
+                    "params": [
+                        account,
+                        "latest"
+                    ],
+                });
+                const balanceInEther = ethers.formatEther(BigInt(myBalance));
+            console.log(`Balance: ${balanceInEther} ETH`);
+            SetBalance(balanceInEther);
+            
+        } catch (error) {
+            console.log(error);
+            throw new Error('error fetching balance');
+        }
+    }
+
     useEffect(() => {
         checkIfWalletConnected();
     }, [])
 
     return (
-        <TransactionContext.Provider value={{ connectWallet, currentAccount, formData, setFormData, handleChange, sendTransaction, disconnectWallet }}>
+        <TransactionContext.Provider value={{ connectWallet, currentAccount, formData, setFormData, handleChange, sendTransaction, disconnectWallet, balance }}>
             {children}
         </TransactionContext.Provider>
     );

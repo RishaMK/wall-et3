@@ -20,7 +20,7 @@ const Input = ({placeholder, name, type, value, handleChange}) => (
 
 const Welcome = () => {
 
-  const { connectWallet, currentAccount, formData, setFormData, handleChange, sendTransaction } = useContext(TransactionContext);
+  const { connectWallet, currentAccount, formData, setFormData, handleChange, sendTransaction, balance } = useContext(TransactionContext);
 
   const handleSubmit = (e) => {
     const {addressTo, amount, keyword, message} = formData;
@@ -67,8 +67,8 @@ const Welcome = () => {
                 <BsInfoCircle fontSize={17} color="#fff"></BsInfoCircle>
               </div>
               <div>
-                <p className="text-white font-light text-sm">Address</p>
-                <p className="text-white font-semibold text-lg mt-1">Etherium</p>
+                {!currentAccount?(<p className="text-white font-light text-sm">Address</p>):(<p className="text-white font-light text-sm">{`${currentAccount.slice(0, 6)}...${currentAccount.slice(-4)}`}</p>)}
+                {!currentAccount?(<p className="text-white font-semibold text-lg mt-1">Ethereum</p>):(<p className="text-white font-semibold text-lg mt-1">{`${balance.slice(0,6)}`} ETH</p>)}
               </div>
             </div>
           </div>
