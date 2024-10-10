@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ethers } from 'ethers';
+import { BrowserProvider, ethers } from 'ethers';
 
 import { contractABI, contractAddress } from "../utils/constants";
 
@@ -7,17 +7,70 @@ export const TransactionContext = React.createContext();
 
 const { ethereum } = window;
 
-const getEthereumContract = () => {
-    const provider = new ethers.provider.Web3Provider(ethereum);
-    const signer = provider.getSigner();
+const getEthereumContract = async () => {
+
+    if (!ethereum) return alert('metamask not installed');
+
+    const provider = new ethers.BrowserProvider(ethereum);
+    const signer = await provider.getSigner(0);
     const transactionContract = new ethers.Contract(contractAddress, contractABI, signer);
 
-    console.log(provider, signer, transactionContract);
+    return transactionContract;
 }
 
 export const TransactionProvider = ({ children }) => {
 
     const [currentAccount, setCurrentAccount] = useState("");
+    const [formData, setFormData] = useState({ addressTo: '', amount: '', keyword: '', message: '' });
+    const [isLoading, setIsLoading] = useState(false);
+    const [transactionCount, setTransactionCount] = useState(() => {
+        const storedCount = localStorage.getItem('transactionCount');
+        return storedCount ? BigInt(storedCount) : 0n;  // Default to 0 if no count is stored
+    });
+
+    const handleChange = (e, name) => {
+        setFormData((prevState) => ({ ...prevState, [name]: e.target.value }));
+    }
+
+    const sendTransaction = async () => {
+        
+        try {
+            const { addressTo, amount, keyword, message } = formData;
+            const transactionContract = await getEthereumContract();
+            const parsedAmount = ethers.parseEther(amount);
+
+            await ethereum.request({
+                "method": 'eth_sendTransaction',
+                "params": [{
+                    from: currentAccount,
+                    to: addressTo,
+                    gas: '0x5208',
+                    value: parsedAmount.toString(),
+                }]
+            })
+
+            const transactionHash = await transactionContract.addToBlockchain(addressTo, keyword, message, parsedAmount);
+
+            setIsLoading(true);
+            console.log(`Loading - ${transactionHash.hash}`);
+
+            await transactionHash.wait();
+            
+            setIsLoading(false);
+            console.log(`Success - ${transactionHash.hash}`);
+
+            const transactionCount = await transactionContract.getTransactionCount();
+            setTransactionCount(transactionCount);
+            console.log(transactionCount.toString());
+
+            localStorage.setItem('transactionCount', transactionCount.toString());
+
+
+        } catch (error) {
+            console.log(error);
+            throw new Error("error in transactions and updating the contract");
+        }
+    }
 
     const checkIfWalletConnected = async () => {
 
@@ -34,7 +87,7 @@ export const TransactionProvider = ({ children }) => {
             }
         } catch (error) {
             console.log(error);
-            throw new Error("No ethereum object");
+            throw new Error("error in checking if user alr logged in");
         }
 
     }
@@ -48,7 +101,24 @@ export const TransactionProvider = ({ children }) => {
             setCurrentAccount(accounts[0]);
         } catch (error) {
             console.log(error);
-            throw new Error("No ethereum object");
+            throw new Error("error connecting wallet");
+        }
+    }
+
+    const disconnectWallet = async() => {
+        try{
+            await ethereum.request({
+                "method": "wallet_revokePermissions",
+                "params": [
+                  {
+                    "eth_accounts": {}
+                  }
+                ]
+              });
+              window.location.reload();
+        }catch(err){
+            console.log(err);
+            throw new Error('error disconnecting wallet');
         }
     }
 
@@ -57,7 +127,7 @@ export const TransactionProvider = ({ children }) => {
     }, [])
 
     return (
-        <TransactionContext.Provider value={{ connectWallet, currentAccount }}>
+        <TransactionContext.Provider value={{ connectWallet, currentAccount, formData, setFormData, handleChange, sendTransaction, disconnectWallet }}>
             {children}
         </TransactionContext.Provider>
     );
