@@ -18,7 +18,7 @@ const Footer = () => {
 
     <div className="flex justify-center items-center flex-col mt-20">
       <p className="text-white text-sm text-center">Reach Out!</p>
-      <p className="text-white text-sm text-center font-medium mt-2">rishamkeerthi@gmail.com</p>
+      <a href="mailto:rishamkeerthi@gmail.com" className="text-white text-sm text-center font-medium mt-2">rishamkeerthi@gmail.com</a>
       <a className="text-white text-sm text-center font-medium mt-2" href='https://rishamk.vercel.app/' target='_blank' rel='noopener noreferrer'>Portfolio</a>
     </div>
   </div>

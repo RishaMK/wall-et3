@@ -23,11 +23,9 @@ export const TransactionProvider = ({ children }) => {
     const [currentAccount, setCurrentAccount] = useState("");
     const [formData, setFormData] = useState({ addressTo: '', amount: '', keyword: '', message: '' });
     const [isLoading, setIsLoading] = useState(false);
-    const [transactionCount, setTransactionCount] = useState(() => {
-        const storedCount = localStorage.getItem('transactionCount');
-        return storedCount ? BigInt(storedCount) : 0n;
-    });
+    const [transactionCount, setTransactionCount] = useState(localStorage.getItem("transactionCount"));
     const [balance, SetBalance] = useState('');
+    const [allTransactions, setAllTransactions] = useState([]);
 
     const handleChange = (e, name) => {
         setFormData((prevState) => ({ ...prevState, [name]: e.target.value }));
@@ -62,23 +60,41 @@ export const TransactionProvider = ({ children }) => {
 
             const transactionCount = await transactionContract.getTransactionCount();
             setTransactionCount(transactionCount);
-            console.log(transactionCount.toString());
 
-            //need to implement real time updation of balance after a transaction
-            fetchBalance(currentAccount);
-
-            localStorage.setItem('transactionCount', transactionCount.toString());
+            window.location.reload();
 
 
         } catch (error) {
             console.log(error);
-            throw new Error("error in transactions and updating the contract");
+            // throw new Error("error in transactions and updating the contract");
+        }
+    }
+
+    const getAllTransactions = async()=>{
+        try {
+            if(!ethereum) return alert('please install metamask');
+            const transactionContract = await getEthereumContract();
+            const availableTransactions = await transactionContract.getAllTransactions();
+
+            const structuredTrxn = availableTransactions.map((transaction)=>({
+                addressTo : transaction.receiver,
+                addressFrom : transaction.sender,
+                timestamp: new Date(Number(transaction.timestamp) * 1000).toLocaleDateString(),
+                message : transaction.message,
+                keyword: transaction.keyword,
+                amount: ethers.formatEther(transaction.amount)
+            })) 
+            setAllTransactions(structuredTrxn);
+            // console.log(structuredTrxn);
+        } catch (error) {
+            console.log(error);
         }
     }
 
     const checkIfWalletConnected = async () => {
 
         try {
+            console.log('entered checkifwalletconnected');
             if (!ethereum) return alert("Please install metamask to connect to wallet");
 
             const accounts = await ethereum.request({ method: 'eth_accounts' });
@@ -87,6 +103,7 @@ export const TransactionProvider = ({ children }) => {
             if (accounts.length) {
                 setCurrentAccount(accounts[0]);
                 fetchBalance(accounts[0]);
+                getAllTransactions();
             } else {
                 console.log('no accounts found');
             }
@@ -95,6 +112,17 @@ export const TransactionProvider = ({ children }) => {
             throw new Error("error in checking if user alr logged in");
         }
 
+    }
+
+    const checkIfTransactionsExist = async () => {
+        if(currentAccount){try {
+            const transactionContract = await getEthereumContract();
+            const transactionCount = await transactionContract.getTransactionCount();
+            window.localStorage.setItem("transactionCount",transactionCount);
+
+        } catch (error) {
+            console.log(error)
+        }}
     }
 
     const connectWallet = async () => {
@@ -130,8 +158,6 @@ export const TransactionProvider = ({ children }) => {
 
     const fetchBalance = async (account) => {
         try {
-            
-                console.log('entered')
                 const myBalance = await ethereum.request({
                     "method": "eth_getBalance",
                     "params": [
@@ -140,7 +166,7 @@ export const TransactionProvider = ({ children }) => {
                     ],
                 });
                 const balanceInEther = ethers.formatEther(BigInt(myBalance));
-            console.log(`Balance: ${balanceInEther} ETH`);
+            // console.log(`Balance: ${balanceInEther} ETH`);
             SetBalance(balanceInEther);
             
         } catch (error) {
@@ -151,10 +177,10 @@ export const TransactionProvider = ({ children }) => {
 
     useEffect(() => {
         checkIfWalletConnected();
+        checkIfTransactionsExist();
     }, [])
-
     return (
-        <TransactionContext.Provider value={{ connectWallet, currentAccount, formData, setFormData, handleChange, sendTransaction, disconnectWallet, balance }}>
+        <TransactionContext.Provider value={{ connectWallet, currentAccount, formData, setFormData, handleChange, sendTransaction, disconnectWallet, balance, allTransactions, isLoading }}>
             {children}
         </TransactionContext.Provider>
     );
