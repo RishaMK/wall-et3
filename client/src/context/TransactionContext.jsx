@@ -25,7 +25,7 @@ export const TransactionProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [transactionCount, setTransactionCount] = useState(() => {
         const storedCount = localStorage.getItem('transactionCount');
-        return storedCount ? BigInt(storedCount) : 0n;  // Default to 0 if no count is stored
+        return storedCount ? BigInt(storedCount) : 0n;
     });
     const [balance, SetBalance] = useState('');
 
@@ -63,6 +63,9 @@ export const TransactionProvider = ({ children }) => {
             const transactionCount = await transactionContract.getTransactionCount();
             setTransactionCount(transactionCount);
             console.log(transactionCount.toString());
+
+            //need to implement real time updation of balance after a transaction
+            fetchBalance(currentAccount);
 
             localStorage.setItem('transactionCount', transactionCount.toString());
 

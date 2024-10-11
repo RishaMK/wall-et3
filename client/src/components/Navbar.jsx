@@ -49,6 +49,14 @@ const Navbar = () => {
             {["Market", "Exchange", "Tutorials", "Wallets"].map(
               (item, index) => <NavBarItem key={item + index} title={item} classprops="my-2 text-lg" />,
             )}
+            {!currentAccount?
+        (<button className="bg-[#2952e3] py-2 px-7 mx-4 rounded-full cursor-pointer hover:bg-[#2546bd]" onClick={connectWallet}>
+          Login
+        </button>)
+        :
+        (<button className="bg-[#2952e3] py-2 px-7 mx-4 rounded-full cursor-pointer hover:bg-[#2546bd]" onClick={disconnectWallet}>
+          Logout
+        </button>)}
           </ul>
         )}
       </div>
