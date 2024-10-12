@@ -98,12 +98,13 @@ export const TransactionProvider = ({ children }) => {
             if (!ethereum) return alert("Please install metamask to connect to wallet");
 
             const accounts = await ethereum.request({ method: 'eth_accounts' });
-            console.log(accounts);
+            // console.log(accounts);
 
             if (accounts.length) {
                 setCurrentAccount(accounts[0]);
                 fetchBalance(accounts[0]);
                 getAllTransactions();
+                // window.location.reload();
             } else {
                 console.log('no accounts found');
             }
@@ -132,7 +133,9 @@ export const TransactionProvider = ({ children }) => {
             const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
 
             setCurrentAccount(accounts[0]);
-            fetchBalance(accounts[0]); 
+            fetchBalance(accounts[0]);
+            getAllTransactions(); 
+            // window.location.reload();
         } catch (error) {
             console.log(error);
             throw new Error("error connecting wallet");
